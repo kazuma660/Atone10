@@ -5,6 +5,7 @@ import { updateCamera } from './systems/camera.js'
 import { getLightRadius, drawLight, drawDarkOverlay } from './effects/flicker.js'
 import { drawNoise } from './effects/noise.js'
 import { createSilhouette, triggerSilhouette, updateSilhouette, drawSilhouette } from './effects/silhouette.js'
+import { createGhosts, updateGhosts, drawGhosts } from './entities/Ghost.js'
 import { FLOOR4 } from './levels/floor4.js'
 import { FLOOR3 } from './levels/floor3.js'
 import { FLOOR2 } from './levels/floor2.js'
@@ -25,6 +26,7 @@ export function createGameState() {
     floor,
     screenShake: 0,
     silhouette: createSilhouette(),
+    ghosts: createGhosts(floor.ghostSpawns),
     transitioning: false,
     transitionTimer: 0,
     hasCable: false,
@@ -56,6 +58,7 @@ export function updateGame(state, keys, dt) {
 
   updateCamera(state.camera, state.player, 800, 600)
   updateSilhouette(state.silhouette, dt)
+  updateGhosts(state.ghosts, state.player, dt)
 
   // 1F 専用インタラクション
   if (state.floorNum === 1) {
@@ -87,6 +90,7 @@ function _descendFloor(state) {
   state.player.y = nextFloor.playerStart.y
   state.camera.x = state.player.x - 392
   state.camera.y = state.player.y - 292
+  state.ghosts      = createGhosts(nextFloor.ghostSpawns)
   state.transitioning = true
   state.transitionTimer = 0.6
 
@@ -181,6 +185,9 @@ export function drawGame(ctx, state) {
   // ── プレイヤー
   ctx.fillStyle = '#c8b89a'
   ctx.fillRect(player.x, player.y, player.w, player.h)
+
+  // ── 幽霊エンティティ
+  drawGhosts(ctx, state.ghosts, camera)
 
   // ── 少女の影
   drawSilhouette(ctx, silhouette, camera)

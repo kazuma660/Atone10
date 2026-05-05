@@ -22,9 +22,11 @@ export const FLOOR1 = {
     { x: 1070,y: 350, w: 50,  h: 90 },  // 東廊下腕
   ],
   stairDown: null,  // 最終フロア
-  // ケーブル: 北廊下 東寄り（要探索）
   cable: { x: 950, y: 210, w: 20, h: 20 },
-  // 配電盤: 西廊下腕 北壁際
   panel: { x: 195, y: 185, w: 30, h: 40 },
   playerStart: { x: 680, y: 220 },  // 2F stairDown と対応
+  ghostSpawns: [
+    { x: 500, y: 780 },  // 南廊下 中央
+    { x: 120, y: 350 },  // 西階段室（配電盤エリア）
+  ],
 }

@@ -21,4 +21,8 @@ export const FLOOR2 = {
   ],
   stairDown:   { x: 680, y: 220, w: 50, h: 50 },
   playerStart: { x: 1060, y: 760 },  // 3F stairDown と対応
+  ghostSpawns: [
+    { x: 220, y: 500 },  // 西廊下腕 中央
+    { x: 800, y: 240 },  // 北廊下 中央
+  ],
 }
