@@ -16,4 +16,5 @@ export const FLOOR4 = {
   ],
   stairDown:   { x: 200, y: 280, w: 50, h: 50 },
   playerStart: { x: 1100, y: 480 },
+  ghostSpawns: [{ x: 750, y: 80 }],  // 北側 N3 室内
 }

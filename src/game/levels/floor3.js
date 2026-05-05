@@ -19,4 +19,5 @@ export const FLOOR3 = {
   ],
   stairDown:   { x: 1060, y: 760, w: 50, h: 50 },
   playerStart: { x: 200, y: 300 },  // 4F stairDown と対応
+  ghostSpawns: [{ x: 570, y: 780 }],  // 南廊下 S2 ドア付近
 }
