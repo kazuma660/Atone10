@@ -1,6 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-// フィルムグレイン（gameLoop と同じノイズを再利用）
 function _drawNoise(ctx, w, h) {
   const img = ctx.createImageData(w, h)
   const d   = img.data
@@ -14,7 +13,8 @@ function _drawNoise(ctx, w, h) {
   ctx.putImageData(img, 0, 0)
 }
 
-export default function TitleScreen({ onStart }) {
+// ── タイトル画面
+function TitleCanvas({ onStart, onControls }) {
   const canvasRef = useRef(null)
   const rafRef    = useRef(null)
 
@@ -23,48 +23,41 @@ export default function TitleScreen({ onStart }) {
     const ctx    = canvas.getContext('2d')
     const W = canvas.width
     const H = canvas.height
-
     let t = 0
 
     const draw = (ts) => {
       t = ts / 1000
       ctx.clearRect(0, 0, W, H)
 
-      // ── 背景
       ctx.fillStyle = '#08070a'
       ctx.fillRect(0, 0, W, H)
 
-      // ── 上下スキャンライン（雰囲気）
-      ctx.save()
+      // スキャンライン
       for (let y = 0; y < H; y += 4) {
         ctx.fillStyle = 'rgba(0,0,0,0.18)'
         ctx.fillRect(0, y, W, 1)
       }
-      ctx.restore()
 
-      // ── タイトル "ATONE" — フェードイン（最初の2秒）
+      // "ATONE" フェードイン
       const titleAlpha = Math.min(1, Math.max(0, (t - 0.5) / 1.5))
       ctx.save()
       ctx.globalAlpha = titleAlpha
       ctx.textAlign   = 'center'
-
-      // メインタイトル
       ctx.font        = 'bold 72px serif'
       ctx.fillStyle   = '#e8e0d0'
-      ctx.letterSpacing = '12px'
-      ctx.fillText('ATONE', W / 2 + 6, H / 2 - 60)
+      ctx.fillText('ATONE', W / 2, H / 2 - 60)
 
-      // サブタイトル "10%"
-      const redPulse = 0.75 + 0.25 * Math.sin(t * 2.0)
-      ctx.font      = 'bold 36px monospace'
-      ctx.fillStyle = `rgba(220,40,40,${redPulse * titleAlpha})`
-      ctx.shadowColor = `rgba(220,0,0,${0.6 * redPulse * titleAlpha})`
+      // "10%" 赤パルス
+      const redPulse  = 0.75 + 0.25 * Math.sin(t * 2.0)
+      ctx.font        = 'bold 36px monospace'
+      ctx.fillStyle   = `rgba(220,40,40,${redPulse})`
+      ctx.shadowColor = `rgba(220,0,0,${0.6 * redPulse})`
       ctx.shadowBlur  = 18
       ctx.fillText('10%', W / 2, H / 2 - 10)
       ctx.shadowBlur  = 0
       ctx.restore()
 
-      // ── キャッチコピー — フェードイン（t > 2.0）
+      // キャッチコピー
       const subAlpha = Math.min(1, Math.max(0, (t - 2.0) / 1.0))
       ctx.save()
       ctx.globalAlpha = subAlpha
@@ -74,60 +67,179 @@ export default function TitleScreen({ onStart }) {
       ctx.fillText('バッテリーが尽きる前に、脱出しろ。', W / 2, H / 2 + 36)
       ctx.restore()
 
-      // ── "Press any key" — フェードイン後に点滅（t > 3.0）
-      const promptAlpha = Math.min(1, Math.max(0, (t - 3.0) / 0.8))
-      const blink       = 0.5 + 0.5 * Math.sin(t * 3.5)
+      // メニュー項目（t > 3.0 で表示）
+      const menuAlpha = Math.min(1, Math.max(0, (t - 3.0) / 0.8))
+      const blink     = 0.5 + 0.5 * Math.sin(t * 3.5)
       ctx.save()
-      ctx.globalAlpha = promptAlpha * (0.4 + 0.6 * blink)
-      ctx.textAlign   = 'center'
+      ctx.textAlign = 'center'
+
+      // ゲームスタート
+      ctx.globalAlpha = menuAlpha * (0.5 + 0.5 * blink)
+      ctx.font        = '15px monospace'
+      ctx.fillStyle   = '#cccccc'
+      ctx.fillText('▶  ゲームスタート  ( any key )', W / 2, H / 2 + 88)
+
+      // 操作方法
+      ctx.globalAlpha = menuAlpha * 0.65
       ctx.font        = '13px monospace'
-      ctx.fillStyle   = '#aaaaaa'
-      ctx.fillText('─── Press any key to start ───', W / 2, H / 2 + 96)
+      ctx.fillStyle   = '#777'
+      ctx.fillText('[ H ]  操作方法', W / 2, H / 2 + 118)
+
       ctx.restore()
 
-      // ── 操作ヒント（右下）
-      const hintAlpha = Math.min(1, Math.max(0, (t - 3.5) / 1.0))
-      ctx.save()
-      ctx.globalAlpha = hintAlpha * 0.45
-      ctx.textAlign   = 'right'
-      ctx.font        = '10px monospace'
-      ctx.fillStyle   = '#555'
-      ctx.fillText('[WASD / ↑↓←→] 移動   [L] ライト   [Shift] 向き固定', W - 20, H - 18)
-      ctx.restore()
-
-      // ── フィルムグレイン
       _drawNoise(ctx, W, H)
-
       rafRef.current = requestAnimationFrame(draw)
     }
 
     rafRef.current = requestAnimationFrame(draw)
 
-    // キー or クリックでゲーム開始
-    const handleKey   = () => onStart()
-    const handleClick = () => onStart()
+    const handleKey = (e) => {
+      if (e.key === 'h' || e.key === 'H') { onControls(); return }
+      onStart()
+    }
     window.addEventListener('keydown', handleKey)
-    window.addEventListener('click',   handleClick)
 
     return () => {
       cancelAnimationFrame(rafRef.current)
       window.removeEventListener('keydown', handleKey)
-      window.removeEventListener('click',   handleClick)
     }
-  }, [onStart])
+  }, [onStart, onControls])
 
   return (
     <canvas
       ref={canvasRef}
       width={800}
       height={600}
-      style={{
-        display: 'block',
-        width:  '100%',
-        height: '100%',
-        imageRendering: 'pixelated',
-        cursor: 'pointer',
-      }}
+      onClick={onStart}
+      style={{ display: 'block', width: '100%', height: '100%', imageRendering: 'pixelated', cursor: 'pointer' }}
     />
   )
+}
+
+// ── 操作方法画面
+function ControlsCanvas({ onBack }) {
+  const canvasRef = useRef(null)
+  const rafRef    = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx    = canvas.getContext('2d')
+    const W = canvas.width
+    const H = canvas.height
+    let t = 0
+
+    const CONTROLS = [
+      { key: 'WASD / ↑↓←→',  desc: '移動' },
+      { key: 'L',              desc: 'ライト ON / OFF' },
+      { key: 'Shift（押しっぱなし）', desc: 'ライトの向きを固定' },
+      { key: 'R',              desc: 'リスタート（ゲームオーバー後）' },
+    ]
+
+    const RULES = [
+      'バッテリーが時間制限。ライトONで消費が増える。',
+      '黒い影に触れるとバッテリーが大幅に減り、スタート地点へ戻る。',
+      '4F でケーブルを入手してから出口へ向かえ。',
+      '1F の出口（青い扉）にたどり着けばクリア。',
+    ]
+
+    const draw = (ts) => {
+      t = ts / 1000
+      ctx.clearRect(0, 0, W, H)
+
+      ctx.fillStyle = '#08070a'
+      ctx.fillRect(0, 0, W, H)
+
+      // スキャンライン
+      for (let y = 0; y < H; y += 4) {
+        ctx.fillStyle = 'rgba(0,0,0,0.15)'
+        ctx.fillRect(0, y, W, 1)
+      }
+
+      const a = Math.min(1, t / 0.4)
+      ctx.globalAlpha = a
+
+      // タイトル
+      ctx.textAlign = 'center'
+      ctx.font      = 'bold 22px monospace'
+      ctx.fillStyle = '#c8b89a'
+      ctx.fillText('── 操作方法 ──', W / 2, 72)
+
+      // 操作一覧
+      ctx.textAlign = 'left'
+      CONTROLS.forEach((c, i) => {
+        const y = 130 + i * 44
+        // キー
+        ctx.font      = 'bold 14px monospace'
+        ctx.fillStyle = '#ffee88'
+        ctx.fillText(`[ ${c.key} ]`, 80, y)
+        // 説明
+        ctx.font      = '14px monospace'
+        ctx.fillStyle = '#aaaaaa'
+        ctx.fillText(c.desc, 340, y)
+        // 区切り線
+        ctx.strokeStyle = 'rgba(80,70,60,0.4)'
+        ctx.lineWidth   = 1
+        ctx.beginPath()
+        ctx.moveTo(80, y + 12)
+        ctx.lineTo(W - 80, y + 12)
+        ctx.stroke()
+      })
+
+      // ゲームルール
+      ctx.textAlign = 'center'
+      ctx.font      = 'bold 14px monospace'
+      ctx.fillStyle = '#776655'
+      ctx.fillText('── ゲームルール ──', W / 2, 316)
+
+      ctx.textAlign = 'left'
+      RULES.forEach((r, i) => {
+        ctx.font      = '12px monospace'
+        ctx.fillStyle = '#665544'
+        ctx.fillText(`・${r}`, 80, 344 + i * 26)
+      })
+
+      // 戻るヒント
+      const blink = 0.5 + 0.5 * Math.sin(t * 3.0)
+      ctx.globalAlpha = a * (0.4 + 0.6 * blink)
+      ctx.textAlign   = 'center'
+      ctx.font        = '13px monospace'
+      ctx.fillStyle   = '#888'
+      ctx.fillText('[ Backspace / Esc ]  タイトルに戻る', W / 2, H - 32)
+
+      ctx.globalAlpha = 1
+      _drawNoise(ctx, W, H)
+      rafRef.current = requestAnimationFrame(draw)
+    }
+
+    rafRef.current = requestAnimationFrame(draw)
+
+    const handleKey = (e) => {
+      if (e.key === 'Backspace' || e.key === 'Escape') onBack()
+    }
+    window.addEventListener('keydown', handleKey)
+
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      window.removeEventListener('keydown', handleKey)
+    }
+  }, [onBack])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={800}
+      height={600}
+      onClick={onBack}
+      style={{ display: 'block', width: '100%', height: '100%', imageRendering: 'pixelated', cursor: 'pointer' }}
+    />
+  )
+}
+
+// ── エクスポート: title | controls を内部で切り替え
+export default function TitleScreen({ onStart }) {
+  const [page, setPage] = useState('title')
+
+  return page === 'title'
+    ? <TitleCanvas onStart={onStart} onControls={() => setPage('controls')} />
+    : <ControlsCanvas onBack={() => setPage('title')} />
 }
