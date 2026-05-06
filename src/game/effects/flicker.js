@@ -17,12 +17,14 @@ export function tickFlicker(player) {
   }
 }
 
-// malfunctionTimer > 0 のとき不規則に消灯（故障フリッカー）
-// batteryMax に比例して光量を縮小（浸食が進むほど暗くなる）
+// 浸食が進むほどフリッカー頻度が増し、光量が縮小する
 export function getLightRadius(isLightOn, malfunctionTimer = 0, batteryMax = 10.0) {
   if (!isLightOn) return 0
-  if (malfunctionTimer > 0 && Math.random() < 0.35) return 0
-  const ratio      = Math.max(0.1, batteryMax / 10.0)  // 10%は最低確保
+  // 浸食ベースのフリッカー確率（batteryMax が減るほど頻繁に消灯）
+  const erosion       = Math.max(0, 1.0 - batteryMax / 10.0)  // 0〜0.9
+  const flickerChance = erosion * 0.45 + (malfunctionTimer > 0 ? 0.30 : 0)
+  if (Math.random() < flickerChance) return 0
+  const ratio      = Math.max(0.1, batteryMax / 10.0)
   const baseRadius = 190 * ratio
   return baseRadius + (Math.random() - 0.5) * 12
 }

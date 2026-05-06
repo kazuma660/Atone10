@@ -1,62 +1,51 @@
-# Atone: Erosion — 根幹システム オーバーホール記録
-
-日付: 2026-05-06
+# Atone: Erosion — 変更履歴
 
 ---
 
-## 変更一覧
+## v3: MVPオーバーホール（2026-05-06）
 
-### systems/battery.js
-- `ERODE_AMOUNT`: `0.1` → `1.0`（捕捉1回で最大容量 -1.0）
-- `REJECTION_THRESHOLD = 10.1` を追加（既存）
+### マップ構造
+- **全フロア（1F〜4F）を 800×600 固定のドーナツ回廊に全書き換え**
+  - 外周廊道 + 上下に2本の障害物（通行不可の壁）
+  - 上・下の外周ルーム（y:16-80, y:520-584）が唯一の迂回路
+  - 中央ボイド（x:230-570, y:160-440）は歩行不可
+  - カメラは 800×600 世界で常に (0,0) に固定（camera.js にクランプ追加）
 
-### entities/Player.js
-- `CABLE_PENALTY`: `0.8` → `0.95`（ケーブル所持時の鈍足を最小限に）
-- Shift キーで `player.facing` を固定する処理を追加（既存）
+### 敵システム
+- **Ghost.js**: 黒矩形（20×44px）に簡略化。ライト照射中は半透明＋ジャギーなし。
+- **ghostRect()** を export し AABB 判定に使用
+- 接触判定を半径ベース → **AABB（rectsOverlap）** に変更
 
-### effects/flicker.js
-- `getLightRadius(isLightOn, malfunctionTimer, batteryMax)` に第3引数 `batteryMax` を追加
-- 光量を `190 * (batteryMax / 10.0)` に比例させ、浸食が進むほど光が弱くなる
-- 最低光量比率 10%（= radius ≒ 19px）を確保
+### スタン（新規）
+- 接触時: `state.stunTimer = 2.0`（2秒操作不能）
+- スタン中は `movePlayer` と `_checkGhostCatch` をスキップ
+- プレイヤーが点滅（8Hzで表示/非表示切替）
+- 接触直後0.4秒: 赤フラッシュ（alpha 0.5）
 
-### effects/glitch.js（新規）
-- 10.1%拒絶時のグリッチ描画：スキャンライン・帯ズレ・白フラッシュ・赤ビネット
+### ゲームシーケンス
+- **4F**: ケーブル（CABLE）取得で階段がアクティブ化（未取得では通過不可）
+- **1F**: 階段踏み込みで `_triggerEnding()` → 白塗り + 「……次は、離さないでね。」
 
-### entities/Ghost.js
-- 捕捉判定は gameLoop 側で行う（Ghost.js 自体に変更なし）
+### 描画演出
+- **浸食暗化**: `batteryMax` 低下に比例してキャンバス全体に黒オーバーレイ（最大 55%）
+- **フリッカー頻度**: 浸食比例（erosion × 0.45 + malfunction時 +0.30）で消灯確率増加
+- **マップ描画簡略化**: rooms/shaft/doors/panel を廃止。床＋壁のみ描画。
 
-### gameLoop.js
-- `state.batteryMax`: 浸食で永久減少する最大容量を追加
-- `state.malfunctionTimer`: 故障フリッカー残り秒数を追加
-- `state.glitchTimer`: グリッチ演出残り秒数を追加
-- `state._screamPending`: スクリーム再生フラグを追加
-- `state.badEnd`: battery=0 バッドエンドフラグを追加
-- `state.badEndAlpha`: 暗転フェードイン進行度（0→1）を追加
-- `_checkGhostCatch()`: ゴースト捕捉 → batteryMax 浸食 + 故障フリッカー5秒
-- `_trigger101Rejection()`: battery≥10.1 → グリッチ2.5秒＋スクリーム＋Floor4強制リセット
-- バッドエンド判定: battery≤0 → `state.badEnd=true`・操作ロック・暗転フェード
-- バッドエンド描画: 暗転後に「……これで、ずっと一緒だよ。」をフェードイン表示
-- `getLightRadius` 呼び出しに `state.batteryMax` を渡すよう修正
-- パネル充電: `BATTERY_START + 95` → `Math.min(batteryMax, REJECTION_THRESHOLD - 0.001)`
+---
 
-### GameCanvas.jsx
-- `_playScream(audioCtx)`: Web Audio API による合成スクリーム（鋸波+歪み、900→80Hz）
-- `onBatteryMaxChange` コールバックを追加
-- ゲームループ内で `state._screamPending` を検知してスクリーム再生
+## v2: 浸食システム実装（前回）
 
-### components/HUD.jsx
-- `batteryMax` prop を追加
-- 浸食が発生した場合（batteryMax < 9.95）に `MAX X.X%` を赤字で表示
-- キー説明に `[Shift] 向き固定` を追加
-
-### App.jsx
-- `batteryMax` state と `setBatteryMax` を追加
-- `GameCanvas` に `onBatteryMaxChange` を渡す
-- `HUD` に `batteryMax` を渡す
+- `ERODE_AMOUNT` 0.1 → 1.0（捕捉1回で最大容量 -1.0）
+- `CABLE_PENALTY` 0.8 → 0.95
+- Lerp カメラ 0.05 → 0.08
+- ライトぼかし BLUR_PX 20 → 40
+- Film Grain 強化、glitch.js 追加
+- バッドエンド（battery=0）、10.1%拒絶、Web Audio スクリーム
 
 ---
 
 ## 未実装・将来課題
-- バッドエンド後のリスタートUI（現状: 画面が止まるのみ）
-- 10.1%拒絶の「リセット後も浸食を持続」するセーブ機構（現状: セッション内のみ）
-- 階段を下りるほど Ghost の AI 強化
+- バッドエンド/エンディング後のリスタートUI
+- ゴーストの壁衝突回避（現状: 壁で詰まることがある）
+- 浸食のセッション跨ぎ保存
+- SE: 接触時の効果音
