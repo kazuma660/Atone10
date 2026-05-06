@@ -1,6 +1,6 @@
 export const SPEED_BASE = 2.5
 export const SPEED_DARK = 1.25
-export const CABLE_PENALTY = 0.8
+export const CABLE_PENALTY = 0.95  // 操作快適性のため最小限の鈍足
 
 export function createPlayer(x, y) {
   return {
@@ -10,6 +10,7 @@ export function createPlayer(x, y) {
     h: 16,
     isLightOn: true,
     hasCable: false,
+    facing: 0,  // ライト方向（ラジアン）、0 = 右
   }
 }
 
@@ -33,6 +34,11 @@ export function movePlayer(player, keys, walls, resolveCollision) {
     const norm = Math.SQRT2
     dx /= norm
     dy /= norm
+  }
+
+  // Shift を押している間は向きを固定（ライト方向ロック）
+  if ((dx !== 0 || dy !== 0) && !keys['Shift']) {
+    player.facing = Math.atan2(dy, dx)
   }
 
   player.x += dx

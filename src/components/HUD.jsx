@@ -1,9 +1,10 @@
 import { HEARTBEAT_THRESHOLD } from '../game/systems/battery.js'
 
-export default function HUD({ battery, floor }) {
+export default function HUD({ battery, batteryMax = 10.0, floor }) {
   const pct = battery.toFixed(1)
   const isLow = battery <= HEARTBEAT_THRESHOLD
   const isCritical = battery <= 1.0
+  const isEroded = batteryMax < 10.0 - 0.05  // 浸食されているか
 
   return (
     <div style={{
@@ -26,8 +27,13 @@ export default function HUD({ battery, floor }) {
       <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
         {floor}F
       </div>
+      {isEroded && (
+        <div style={{ fontSize: '10px', color: '#993333', marginTop: 4, textShadow: '0 0 6px #ff0000' }}>
+          MAX {batteryMax.toFixed(1)}%
+        </div>
+      )}
       <div style={{ fontSize: '10px', color: '#444', marginTop: 8 }}>
-        [L] ライト
+        [L] ライト　[Shift] 向き固定
       </div>
       <style>{`
         @keyframes pulse {
