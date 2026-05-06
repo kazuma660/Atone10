@@ -237,7 +237,7 @@ export function drawGame(ctx, state) {
       ctx.strokeRect(s.x, s.y, s.w, s.h)
       ctx.fillStyle = '#5aaa5a'
       ctx.font = 'bold 11px monospace'
-      ctx.fillText(`▼ ${state.floorNum - 1}F`, s.x + 4, s.y + 26)
+      ctx.fillText('出口', s.x + 8, s.y + 26)
     }
   }
 
@@ -251,9 +251,8 @@ export function drawGame(ctx, state) {
     ctx.lineWidth   = 2
     ctx.strokeRect(p.x, p.y, p.w, p.h)
     ctx.fillStyle = active ? '#44aaff' : '#aa4444'
-    ctx.font = 'bold 9px monospace'
-    ctx.fillText('PANEL', p.x + 2, p.y + 15)
-    ctx.fillText(active ? '[ ON ]' : '[LOCK]', p.x + 2, p.y + 28)
+    ctx.font = 'bold 11px monospace'
+    ctx.fillText('出口', p.x + 6, p.y + 26)
   }
 
   // ── プレイヤー（スタン中は点滅）
