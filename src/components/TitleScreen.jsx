@@ -62,7 +62,7 @@ function TitleCanvas({ onStart, onControls }) {
         ctx.fillRect(0, y, W, 1)
       }
 
-      const titleAlpha = Math.min(1, Math.max(0, (t - 0.5) / 1.5))
+      const titleAlpha = Math.min(1, t / 0.3)  // 即表示（0.3秒でフェードイン）
       ctx.save()
       ctx.globalAlpha = titleAlpha
       ctx.textAlign   = 'center'
@@ -79,7 +79,7 @@ function TitleCanvas({ onStart, onControls }) {
       ctx.shadowBlur  = 0
       ctx.restore()
 
-      const subAlpha = Math.min(1, Math.max(0, (t - 2.0) / 1.0))
+      const subAlpha = Math.min(1, Math.max(0, (t - 0.8) / 0.5))
       ctx.save()
       ctx.globalAlpha = subAlpha
       ctx.textAlign   = 'center'
@@ -88,7 +88,7 @@ function TitleCanvas({ onStart, onControls }) {
       ctx.fillText('バッテリーが尽きる前に、脱出しろ。', W / 2, H / 2 + 36)
       ctx.restore()
 
-      const menuAlpha = Math.min(1, Math.max(0, (t - 3.0) / 0.8))
+      const menuAlpha = Math.min(1, Math.max(0, (t - 1.5) / 0.6))
       const blink     = 0.5 + 0.5 * Math.sin(t * 3.5)
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
