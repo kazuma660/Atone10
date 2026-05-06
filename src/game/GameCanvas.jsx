@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { createGameState, updateGame, drawGame } from './gameLoop.js'
 
-// TODO: Phase 2 Horror Expansion
-// Web Audio スクリーム合成（10.1%拒絶時）
-// function _playScream(audioCtx) { ... sawtooth oscillator, 900→80Hz ... }
-
-export default function GameCanvas({ onBatteryChange, onFloorChange, onStatusChange }) {
+export default function GameCanvas({ paused, onEscape, onBatteryChange, onFloorChange, onStatusChange }) {
   const canvasRef = useRef(null)
   const stateRef  = useRef(null)
   const keysRef   = useRef({})
   const rafRef    = useRef(null)
+  const pausedRef = useRef(paused)
+
+  // paused が変わったら ref にも反映（ループ内で参照するため）
+  pausedRef.current = paused
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -17,16 +17,14 @@ export default function GameCanvas({ onBatteryChange, onFloorChange, onStatusCha
     stateRef.current = createGameState()
 
     const onKeyDown = (e) => {
+      if (e.key === 'Escape') { onEscape?.(); return }
       keysRef.current[e.key] = true
-      // ライト ON/OFF
       if (e.key === 'l' || e.key === 'L') {
         stateRef.current.player.isLightOn = !stateRef.current.player.isLightOn
       }
       e.preventDefault()
     }
-    const onKeyUp = (e) => {
-      keysRef.current[e.key] = false
-    }
+    const onKeyUp = (e) => { keysRef.current[e.key] = false }
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup',   onKeyUp)
@@ -40,32 +38,17 @@ export default function GameCanvas({ onBatteryChange, onFloorChange, onStatusCha
       const dt = Math.min((timestamp - lastTime) / 1000, 0.05)
       lastTime = timestamp
 
-      updateGame(stateRef.current, keysRef.current, dt)
+      // ポーズ中はゲーム更新をスキップ（描画だけ続ける）
+      if (!pausedRef.current) {
+        updateGame(stateRef.current, keysRef.current, dt)
+      }
       drawGame(ctx, stateRef.current)
 
-      // TODO: Phase 2 Horror Expansion
-      // if (stateRef.current._screamPending) {
-      //   stateRef.current._screamPending = false
-      //   if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
-      //   _playScream(audioCtxRef.current)
-      // }
-
       const s = stateRef.current
-      if (s.battery !== lastBattery) {
-        lastBattery = s.battery
-        onBatteryChange?.(s.battery)
-      }
-      if (s.floorNum !== lastFloor) {
-        lastFloor = s.floorNum
-        onFloorChange?.(s.floorNum)
-      }
-
-      // ステータス通知（HUD向け: ケーブル取得済みか、クリアか）
+      if (s.battery !== lastBattery)  { lastBattery = s.battery;   onBatteryChange?.(s.battery)  }
+      if (s.floorNum !== lastFloor)   { lastFloor   = s.floorNum;  onFloorChange?.(s.floorNum)   }
       const status = s.cleared ? 'cleared' : s.badEnd ? 'badEnd' : s.hasCable ? 'hasCable' : 'normal'
-      if (status !== lastStatus) {
-        lastStatus = status
-        onStatusChange?.(status)
-      }
+      if (status !== lastStatus)      { lastStatus  = status;      onStatusChange?.(status)       }
 
       rafRef.current = requestAnimationFrame(loop)
     }
