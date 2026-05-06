@@ -237,7 +237,7 @@ export function drawGame(ctx, state) {
       ctx.strokeRect(s.x, s.y, s.w, s.h)
       ctx.fillStyle = '#5aaa5a'
       ctx.font = 'bold 11px monospace'
-      ctx.fillText('出口', s.x + 8, s.y + 26)
+      ctx.fillText(`▼ ${state.floorNum - 1}F`, s.x + 4, s.y + 26)
     }
   }
 
